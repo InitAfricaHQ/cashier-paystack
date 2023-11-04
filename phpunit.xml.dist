@@ -10,15 +10,14 @@
          stopOnFailure="false"
 >
     <testsuites>
-        <testsuite name="Package Test Suite">
-            <directory suffix=".php">./tests/</directory>
+        <testsuite name="Feature">
+            <directory suffix="Test.php">./tests/Feature</directory>
         </testsuite>
     </testsuites>
     <php>
+        <env name="DB_CONNECTION" value="testing"/>
         <env name="PAYSTACK_PUBLIC_KEY" value=""/>
         <env name="PAYSTACK_SECRET_KEY" value=""/>
-        <env name="PAYSTACK_PAYMENT_URL" value="https://api.paystack.co"/>
         <env name="MERCHANT_EMAIL" value=""/>
-        <env name="PAYSTACK_MODEL" value="InitAfricaHQ\Cashier\Tests\User"/>
     </php>
 </phpunit>

@@ -4,26 +4,25 @@ namespace InitAfricaHQ\Cashier;
 
 use Carbon\Carbon;
 use Exception;
-use Unicodeveloper\Paystack\Facades\Paystack;
 
 class SubscriptionBuilder
 {
     /**
      * The model that is subscribing.
      *
-     * @var \Illuminate\Database\Eloquent\Model
+     * @var \InitAfricaHQ\Cashier\Billable
      */
-    protected $owner;
+    protected $billable;
 
     /**
-     * The name of the subscription.
+     * The type of the subscription.
      *
      * @var string
      */
-    protected $name;
+    protected $type;
 
     /**
-     * The name of the plan being subscribed to.
+     * The paystack code of the plan being subscribed to.
      *
      * @var string
      */
@@ -53,16 +52,16 @@ class SubscriptionBuilder
     /**
      * Create a new subscription builder instance.
      *
-     * @param  mixed  $owner
-     * @param  string  $name
+     * @param  mixed  $billable
+     * @param  string  $type
      * @param  string  $plan
      * @return void
      */
-    public function __construct($owner, $name, $plan)
+    public function __construct($billable, $type, $plan)
     {
-        $this->name = $name;
+        $this->type = $type;
         $this->plan = $plan;
-        $this->owner = $owner;
+        $this->billable = $billable;
     }
 
     /**
@@ -97,7 +96,7 @@ class SubscriptionBuilder
      *
      * @throws \Exception
      */
-    public function add(array $options = [])
+    public function save(array $options = [])
     {
         if ($this->skipTrial) {
             $trialEndsAt = null;
@@ -105,8 +104,8 @@ class SubscriptionBuilder
             $trialEndsAt = $this->trialDays ? Carbon::now()->addDays($this->trialDays) : null;
         }
 
-        return $this->owner->subscriptions()->create([
-            'name' => $this->name,
+        return $this->billable->subscriptions()->create([
+            'type' => $this->type,
             'paystack_id' => $options['id'],
             'paystack_code' => $options['subscription_code'],
             'paystack_plan' => $this->plan,
@@ -129,7 +128,7 @@ class SubscriptionBuilder
             'plan' => $this->plan,
         ], $options);
 
-        return $this->owner->charge(100, $options);
+        return $this->billable->charge(100, $options);
     }
 
     /**
@@ -145,18 +144,20 @@ class SubscriptionBuilder
         $payload = $this->getSubscriptionPayload(
             $this->getPaystackCustomer(), $options
         );
+
         // Set the desired authorization you wish to use for this subscription here.
         // If this is not supplied, the customer's most recent authorization would be used
         if (isset($token)) {
             $payload['authorization'] = $token;
         }
-        $subscription = PaystackService::createSubscription($payload);
+
+        $subscription = Paystack::createSubscription($payload);
 
         if (! $subscription['status']) {
             throw new Exception('Paystack failed to create subscription: '.$subscription['message']);
         }
 
-        return $this->add($subscription['data']);
+        return $this->save($subscription['data']);
     }
 
     /**
@@ -175,7 +176,7 @@ class SubscriptionBuilder
         }
 
         return [
-            'customer' => $customer['customer_code'], //Customer email or code
+            'customer' => $customer['customer_code'], // customer email or code
             'plan' => $this->plan,
             'start_date' => $startDate->format('c'),
         ];
@@ -188,10 +189,10 @@ class SubscriptionBuilder
      */
     protected function getPaystackCustomer(array $options = [])
     {
-        if (! $this->owner->paystack_id) {
-            $customer = $this->owner->createAsPaystackCustomer($options);
+        if (! $this->billable->customer?->paystack_id) {
+            $customer = $this->billable->createAsPaystackCustomer($options);
         } else {
-            $customer = $this->owner->asPaystackCustomer();
+            $customer = $this->billable->asPaystackCustomer();
         }
 
         return $customer;

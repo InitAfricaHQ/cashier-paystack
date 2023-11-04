@@ -210,8 +210,7 @@ class Invoice
     {
         $data['customer'] = $this->owner->paystack_id;
 
-        return PaystackService::updateInvoice($this->invoice['id'], $data);
-
+        return Paystack::updateInvoice($this->invoice['id'], $data);
     }
 
     /**
@@ -227,7 +226,7 @@ class Invoice
      */
     public function verify()
     {
-        return PaystackService::verifyInvoice($this->invoice['request_code']);
+        return Paystack::verifyInvoice($this->invoice['request_code']);
     }
 
     /**
@@ -235,7 +234,7 @@ class Invoice
      */
     public function notify()
     {
-        return PaystackService::notifyInvoice($this->invoice['id']);
+        return Paystack::notifyInvoice($this->invoice['id']);
     }
 
     /**
@@ -244,7 +243,7 @@ class Invoice
     public function finalize()
     {
         if ($this->status() === 'draft') {
-            return PaystackService::finalizeInvoice($this->invoice['id']);
+            return Paystack::finalizeInvoice($this->invoice['id']);
         }
 
         return $this->notify();
@@ -255,7 +254,7 @@ class Invoice
      */
     public function archive()
     {
-        return PaystackService::archiveInvoice($this->invoice['id']);
+        return Paystack::archiveInvoice($this->invoice['id']);
     }
 
     /**
@@ -280,9 +279,11 @@ class Invoice
         if (! defined('DOMPDF_ENABLE_AUTOLOAD')) {
             define('DOMPDF_ENABLE_AUTOLOAD', false);
         }
+
         if (file_exists($configPath = base_path().'/vendor/dompdf/dompdf/dompdf_config.inc.php')) {
             require_once $configPath;
         }
+
         $dompdf = new Dompdf;
         $dompdf->loadHtml($this->view($data)->render());
         $dompdf->render();

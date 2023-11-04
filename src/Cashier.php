@@ -22,6 +22,16 @@ class Cashier
     protected static $currencySymbol = '₦';
 
     /**
+     * Indicates if migrations will be run.
+     */
+    public static bool $runsMigrations = true;
+
+    /**
+     * Indicates if routes will be registered.
+     */
+    public static bool $registersRoutes = true;
+
+    /**
      * The custom currency formatter.
      *
      * @var callable
@@ -29,14 +39,14 @@ class Cashier
     protected static $formatCurrencyUsing;
 
     /**
-     * Get the class name of the billable model.
-     *
-     * @return string
+     * The customer model class name.
      */
-    public static function paystackModel()
-    {
-        return getenv('PAYSTACK_MODEL') ?: config('paystack.model', 'App\\User');
-    }
+    public static string $customerModel = Customer::class;
+
+    /**
+     * The subscription model class name.
+     */
+    public static string $subscriptionModel = Subscription::class;
 
     /**
      * Set the currency to be used when billing models.
@@ -50,8 +60,26 @@ class Cashier
     public static function useCurrency($currency, $symbol = null)
     {
         $currency = strtolower($currency);
+
         static::$currency = $currency;
+
         static::useCurrencySymbol($symbol ?: static::guessCurrencySymbol($currency));
+    }
+
+    /**
+     * Set the customer model class name.
+     */
+    public static function useCustomerModel(string $customerModel): void
+    {
+        static::$customerModel = $customerModel;
+    }
+
+    /**
+     * Set the subscription model class name.
+     */
+    public static function useSubscriptionModel(string $subscriptionModel): void
+    {
+        static::$subscriptionModel = $subscriptionModel;
     }
 
     /**
@@ -134,7 +162,9 @@ class Cashier
         if (static::$formatCurrencyUsing) {
             return call_user_func(static::$formatCurrencyUsing, $amount);
         }
+
         $amount = number_format($amount / 100, 2);
+
         if (Str::startsWith($amount, '-')) {
             return '-'.static::usesCurrencySymbol().ltrim($amount, '-');
         }

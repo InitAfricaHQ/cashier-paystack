@@ -1,12 +1,11 @@
 <?php
 
-namespace InitAfricaHQ\Cashier\Tests;
+namespace Tests;
 
+use InitAfricaHQ\Cashier\CashierServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
-use Unicodeveloper\Paystack\Facades\Paystack;
-use Unicodeveloper\Paystack\PaystackServiceProvider;
 
-abstract class TestCase extends OrchestraTestCase
+class TestCase extends OrchestraTestCase
 {
     /**
      * Load package service provider
@@ -16,7 +15,7 @@ abstract class TestCase extends OrchestraTestCase
      */
     protected function getPackageProviders($app)
     {
-        return [PaystackServiceProvider::class];
+        return [CashierServiceProvider::class];
     }
 
     /**
@@ -27,8 +26,22 @@ abstract class TestCase extends OrchestraTestCase
      */
     protected function getPackageAliases($app)
     {
-        return [
-            'laravel-paystack' => Paystack::class,
-        ];
+        return [];
+    }
+
+    /**
+     * Define environment setup.
+     *
+     * @param  \Illuminate\Foundation\Application  $app
+     * @return void
+     */
+    protected function defineEnvironment($app)
+    {
+        $app['config']->set('database.default', 'testing');
+    }
+
+    protected function defineDatabaseMigrations()
+    {
+        $this->loadLaravelMigrations(['--database' => 'testing']);
     }
 }

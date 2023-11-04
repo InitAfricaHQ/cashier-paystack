@@ -4,11 +4,16 @@ namespace InitAfricaHQ\Cashier;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InitAfricaHQ\Cashier\Database\Factories\SubscriptionFactory;
 use LogicException;
-use Unicodeveloper\Paystack\Facades\Paystack;
 
 class Subscription extends Model
 {
+    const DEFAULT_TYPE = 'default';
+
+    protected $table = 'paystack_subscriptions';
+
     /**
      * The attributes that are not mass assignable.
      *
@@ -22,9 +27,9 @@ class Subscription extends Model
      * @var array
      */
     protected $casts = [
-        'trial_ends_at' => 'datetime', 
+        'trial_ends_at' => 'datetime',
         'ends_at' => 'datetime',
-        'created_at' => 'datetime', 
+        'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
@@ -35,19 +40,15 @@ class Subscription extends Model
      */
     public function user()
     {
-        return $this->owner();
+        return $this->billable();
     }
 
     /**
-     * Get the model related to the subscription.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * Get the billable model related to the subscription.
      */
-    public function owner()
+    public function billable(): MorphTo
     {
-        $class = Cashier::paystackModel();
-
-        return $this->belongsTo($class, (new $class)->getForeignKey());
+        return $this->morphTo();
     }
 
     /**
@@ -135,6 +136,14 @@ class Subscription extends Model
     }
 
     /**
+     * Determine if the subscription is on a specific plan.
+     */
+    public function hasPlan(string $planId): bool
+    {
+        return $this->paystack_plan === $planId;
+    }
+
+    /**
      * Cancel the subscription at the end of the billing period.
      *
      * @return $this
@@ -143,10 +152,11 @@ class Subscription extends Model
     {
         $subscription = $this->asPaystackSubscription();
 
-        PaystackService::disableSubscription([
+        Paystack::disableSubscription([
             'token' => $subscription['email_token'],
             'code' => $subscription['subscription_code'],
         ]);
+
         // If the user was on trial, we will set the grace period to end when the trial
         // would have ended. Otherwise, we'll retrieve the end of the billing period
         // period and make that the end of the grace period for this current user.
@@ -157,6 +167,7 @@ class Subscription extends Model
                 $subscription['next_payment_date']
             );
         }
+
         $this->save();
 
         return $this;
@@ -194,18 +205,40 @@ class Subscription extends Model
      */
     public function resume()
     {
+        return $this; // currently unclear why this can sometimes works after a cancel and other times doesnt
+
         $subscription = $this->asPaystackSubscription();
+
         // To resume the subscription we need to enable the Paystack
         // subscription. Then Paystack will resume this subscription
         // where we left off.
-        PaystackService::enableSubscription([
+        Paystack::enableSubscription([
             'token' => $subscription['email_token'],
             'code' => $subscription['subscription_code'],
         ]);
+
         // Finally, we will remove the ending timestamp from the user's record in the
         // local database to indicate that the subscription is active again and is
         // no longer "cancelled". Then we will save this record in the database.
         $this->fill(['ends_at' => null])->save();
+
+        return $this;
+    }
+
+    /**
+     * Swap the subscription to a new plan.
+     */
+    public function swap(string $plan, array $attributes = []): self
+    {
+        $subscription = $this->asPaystackSubscription();
+
+        $this->cancel();
+
+        Paystack::createSubscription(array_merge([
+            'customer' => $this->billable->customer->paystack_code,
+            'plan' => $plan,
+            'start_date' => $subscription['next_payment_date'],
+        ], $attributes));
 
         return $this;
     }
@@ -217,11 +250,13 @@ class Subscription extends Model
      */
     public function asPaystackSubscription()
     {
-        $subscriptions = PaystackService::customerSubscriptions($this->user->paystack_id);
+        $response = Paystack::customerSubscriptions($this->billable->customer->paystack_id);
+        $subscriptions = $response->json('data');
 
         if (! $subscriptions || empty($subscriptions)) {
             throw new LogicException('The Paystack customer does not have any subscriptions.');
         }
+
         foreach ($subscriptions as $subscription) {
             if ($subscription['id'] == $this->paystack_id) {
                 return $subscription;
@@ -229,5 +264,13 @@ class Subscription extends Model
         }
 
         throw new LogicException('The Paystack subscription does not exist for this customer.');
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): SubscriptionFactory
+    {
+        return SubscriptionFactory::new();
     }
 }

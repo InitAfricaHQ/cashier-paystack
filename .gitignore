@@ -5,3 +5,4 @@ phpunit.xml
 Thumbs.db
 composer.phar
 composer.lock
+.phpunit.result.cache

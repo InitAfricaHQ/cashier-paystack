@@ -3,15 +3,16 @@
 namespace InitAfricaHQ\Cashier;
 
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 
 class Card
 {
     /**
      * The Paystack model instance.
      *
-     * @var \Illuminate\Database\Eloquent\Model
+     * @var Model
      */
-    protected $owner;
+    protected $billable;
 
     /**
      * The Paystack card instance.
@@ -21,29 +22,31 @@ class Card
     /**
      * Create a new card instance.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $owner
+     * @param  Model  $billable
      * @return void
      */
-    public function __construct($owner, $card)
+    public function __construct($billable, $card)
     {
-        $this->owner = $owner;
+        $this->billable = $billable;
         $this->card = (object) $card;
     }
 
     /**
      * Check the payment Method have funds for the payment you seek.
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function check($amount)
     {
         $data = [];
-        $data['email'] = $this->owner->email;
+        $data['email'] = $this->billable->email;
         $data['amount'] = $amount;
         $data['authorization_code'] = $this->card->authorization_code;
+
         if ($this->isReusable) {
-            return PaystackService::checkAuthorization($data);
+            return Paystack::checkAuthorization($data);
         }
+
         throw new Exception('Payment Method is no longer reusable.');
     }
 
@@ -52,7 +55,7 @@ class Card
      */
     public function delete()
     {
-        return PaystackService::deactivateAuthorization($this->card->authorization_code);
+        return Paystack::deactivateAuthorization($this->card->authorization_code);
     }
 
     /**

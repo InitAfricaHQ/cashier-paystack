@@ -12,29 +12,30 @@
     "require": {
         "php": "^8.1",
         "dompdf/dompdf": "^2.0",
+        "guzzlehttp/guzzle": "^7.8",
         "illuminate/database": "^10.0",
+        "illuminate/http": "^10.30",
+        "illuminate/routing": "^10.30",
         "illuminate/support": "^10.0",
+        "illuminate/view": "^10.30",
         "nesbot/carbon": "^2.0",
-        "symfony/http-kernel": "^6.0",
-        "unicodeveloper/laravel-paystack": "^1.1"
+        "symfony/http-kernel": "^6.0"
     },
     "require-dev": {
-        "illuminate/http": "^10.0",
-        "illuminate/routing": "^10.0",
-        "illuminate/view": "^10.0",
         "laravel/pint": "^1.13",
-        "mockery/mockery": "~1.0",
+        "mockery/mockery": "^1.6",
         "orchestra/testbench": "^8.14",
-        "phpunit/phpunit": "^9.6"
+        "pestphp/pest": "^2.24"
     },
     "autoload": {
         "psr-4": {
-            "InitAfricaHQ\\Cashier\\": "src/"
+            "InitAfricaHQ\\Cashier\\": "src/",
+            "InitAfricaHQ\\Cashier\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "InitAfricaHQ\\Cashier\\Tests\\": "tests/"
+            "Tests\\": "tests/"
         }
     },
     "extra": {
@@ -45,7 +46,10 @@
         }
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     },
     "minimum-stability": "dev",
     "prefer-stable": true
