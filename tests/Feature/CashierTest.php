@@ -207,7 +207,7 @@ it('can successfully mark a subscription as cancelled from a webhook', function 
     runTestCharge($user, 1);
 
     $planCode = getTestPlan()['plan_code'];
-    $user->createAsPaystackCustomer();
+    $user->createAsCustomer();
 
     // Create Subscription
     $user->newSubscription('default', $planCode)->create();
@@ -273,7 +273,7 @@ it('can successfully mark a subscription as cancelled from a webhook', function 
 it('can successfully create one off invoice for a billable', function () {
     $user = User::factory()->create();
 
-    $user->createAsPaystackCustomer();
+    $user->createAsCustomer();
 
     // Create Invoice
     $options['due_date'] = 'Next Week';

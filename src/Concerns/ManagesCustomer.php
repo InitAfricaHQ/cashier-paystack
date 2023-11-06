@@ -17,11 +17,11 @@ trait ManagesCustomer
      *
      * @throws Exception
      */
-    public function createAsPaystackCustomer(array $options = [])
+    public function createAsCustomer(array $options = [])
     {
         $options = array_key_exists('email', $options)
-        ? $options
-        : array_merge($options, ['email' => $this->email]);
+            ? $options
+            : array_merge($options, ['email' => $this->paystackEmail()]);
 
         $response = Paystack::createCustomer($options);
 
@@ -35,6 +35,14 @@ trait ManagesCustomer
         ]);
 
         return $response['data'];
+    }
+
+    /**
+     * Get the billable's email address to associate with Paystack.
+     */
+    public function paystackEmail(): ?string
+    {
+        return $this->email ?? null;
     }
 
     /**

@@ -124,8 +124,15 @@ class SubscriptionBuilder
      */
     public function charge(array $options = [])
     {
+        $optionsMetadata = json_decode($options['metadata'] ?? '') ?? [];
+        unset($options['metadata']);
+
         $options = array_merge([
             'plan' => $this->plan,
+            'metadata' => json_encode(array_merge([
+                'billable_id' => $this->billable->getKey(),
+                'billable_type' => $this->billable->getMorphClass(),
+            ], $optionsMetadata)),
         ], $options);
 
         return $this->billable->charge(100, $options);
@@ -175,11 +182,11 @@ class SubscriptionBuilder
             $startDate = $this->trialDays ? Carbon::now()->addDays($this->trialDays) : Carbon::now();
         }
 
-        return [
+        return array_merge([
             'customer' => $customer['customer_code'], // customer email or code
             'plan' => $this->plan,
             'start_date' => $startDate->format('c'),
-        ];
+        ], $options);
     }
 
     /**
@@ -190,7 +197,7 @@ class SubscriptionBuilder
     protected function getPaystackCustomer(array $options = [])
     {
         if (! $this->billable->customer?->paystack_id) {
-            $customer = $this->billable->createAsPaystackCustomer($options);
+            $customer = $this->billable->createAsCustomer($options);
         } else {
             $customer = $this->billable->asPaystackCustomer();
         }

@@ -3,6 +3,7 @@
 namespace InitAfricaHQ\Cashier;
 
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use InitAfricaHQ\Cashier\Database\Factories\SubscriptionFactory;
@@ -72,6 +73,22 @@ class Subscription extends Model
     }
 
     /**
+     * Filter query by active.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeActive($query)
+    {
+        $query->where(function ($query) {
+            $query->whereNull('ends_at')
+                ->orWhere(function ($query) {
+                    $query->onGracePeriod();
+                });
+        });
+    }
+
+    /**
      * Determine if the subscription is recurring and not on trial.
      *
      * @return bool
@@ -79,6 +96,17 @@ class Subscription extends Model
     public function recurring()
     {
         return ! $this->onTrial() && ! $this->cancelled();
+    }
+
+    /**
+     * Filter query by recurring.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeRecurring($query)
+    {
+        $query->notOnTrial()->notCancelled();
     }
 
     /**
@@ -92,6 +120,28 @@ class Subscription extends Model
     }
 
     /**
+     * Filter query by cancelled.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeCancelled($query)
+    {
+        $query->whereNotNull('ends_at');
+    }
+
+    /**
+     * Filter query by not cancelled.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeNotCancelled($query)
+    {
+        $query->whereNull('ends_at');
+    }
+
+    /**
      * Determine if the subscription has ended and the grace period has expired.
      *
      * @return bool
@@ -99,6 +149,17 @@ class Subscription extends Model
     public function ended()
     {
         return $this->cancelled() && ! $this->onGracePeriod();
+    }
+
+    /**
+     * Filter query by ended.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeEnded($query)
+    {
+        $query->cancelled()->notOnGracePeriod();
     }
 
     /**
@@ -112,6 +173,28 @@ class Subscription extends Model
     }
 
     /**
+     * Filter query by on trial.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeOnTrial($query)
+    {
+        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', Carbon::now());
+    }
+
+    /**
+     * Filter query by not on trial.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeNotOnTrial($query)
+    {
+        $query->whereNull('trial_ends_at')->orWhere('trial_ends_at', '<=', Carbon::now());
+    }
+
+    /**
      * Determine if the subscription is within its grace period after cancellation.
      *
      * @return bool
@@ -119,6 +202,28 @@ class Subscription extends Model
     public function onGracePeriod()
     {
         return $this->ends_at && $this->ends_at->isFuture();
+    }
+
+    /**
+     * Filter query by on grace period.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeOnGracePeriod($query)
+    {
+        $query->whereNotNull('ends_at')->where('ends_at', '>', Carbon::now());
+    }
+
+    /**
+     * Filter query by not on grace period.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return void
+     */
+    public function scopeNotOnGracePeriod($query)
+    {
+        $query->whereNull('ends_at')->orWhere('ends_at', '<=', Carbon::now());
     }
 
     /**
@@ -205,8 +310,6 @@ class Subscription extends Model
      */
     public function resume()
     {
-        return $this; // currently unclear why this can sometimes works after a cancel and other times doesnt
-
         $subscription = $this->asPaystackSubscription();
 
         // To resume the subscription we need to enable the Paystack
@@ -235,7 +338,7 @@ class Subscription extends Model
         $this->cancel();
 
         Paystack::createSubscription(array_merge([
-            'customer' => $this->billable->customer->paystack_code,
+            'customer' => $subscription['customer']['customer_code'],
             'plan' => $plan,
             'start_date' => $subscription['next_payment_date'],
         ], $attributes));
@@ -250,20 +353,14 @@ class Subscription extends Model
      */
     public function asPaystackSubscription()
     {
-        $response = Paystack::customerSubscriptions($this->billable->customer->paystack_id);
-        $subscriptions = $response->json('data');
+        $response = Paystack::fetchSubscription($this->paystack_code);
+        $subscription = $response->json('data');
 
-        if (! $subscriptions || empty($subscriptions)) {
-            throw new LogicException('The Paystack customer does not have any subscriptions.');
+        if (! $subscription || empty($subscription)) {
+            throw new Exception('Subscription not found.');
         }
 
-        foreach ($subscriptions as $subscription) {
-            if ($subscription['id'] == $this->paystack_id) {
-                return $subscription;
-            }
-        }
-
-        throw new LogicException('The Paystack subscription does not exist for this customer.');
+        return $subscription;
     }
 
     /**

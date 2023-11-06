@@ -23,7 +23,7 @@ trait ManagesInvoices
     public function tab($description, $amount, array $options = [])
     {
         if (! $this->customer->paystack_id) {
-            throw new InvalidArgumentException(class_basename($this).' is not a Paystack customer. See the createAsPaystackCustomer method.');
+            throw new InvalidArgumentException(class_basename($this).' is not a Paystack customer. See the createAsCustomer method.');
         }
 
         if (! array_key_exists('due_date', $options)) {
@@ -119,7 +119,7 @@ trait ManagesInvoices
         $this->assertCustomerExists();
 
         $invoices = [];
-        $parameters = array_merge(['customer' => $this->paystack_id], $options);
+        $parameters = array_merge(['customer' => $this->customer->paystack_id], $options);
 
         $response = Paystack::fetchInvoices($parameters);
         $paystackInvoices = $response->json('data');

@@ -73,6 +73,11 @@ class Paystack
         return static::api('/deactivate_authorization', 'post', $data);
     }
 
+    public static function fetchSubscription($code)
+    {
+        return static::api("/subscription/{$code}", 'get', []);
+    }
+
     public static function createSubscription($data)
     {
         return static::api('/subscription', 'post', $data);

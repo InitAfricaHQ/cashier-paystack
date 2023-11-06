@@ -129,7 +129,8 @@ class WebhookController extends Controller
             throw new InvalidArgumentException('Customer data not found in payload');
         }
 
-        return Cashier::$customerModel::query()->where('paystack_code', $customer)
+        return Cashier::$customerModel::query()
+            ->where('paystack_code', $customer)
             ->first()
             ?->billable;
     }
