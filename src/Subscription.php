@@ -335,7 +335,9 @@ class Subscription extends Model
     {
         $subscription = $this->asPaystackSubscription();
 
-        $this->cancel();
+        if ($this->cancelled() === false) {
+            $this->cancel();
+        }
 
         Paystack::createSubscription(array_merge([
             'customer' => $subscription['customer']['customer_code'],
