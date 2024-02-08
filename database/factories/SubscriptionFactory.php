@@ -28,10 +28,10 @@ class SubscriptionFactory extends Factory
             'billable_type' => 'App\\Models\\User',
             'type' => Subscription::DEFAULT_TYPE,
             'paystack_plan' => rand(1, 1000),
-            'paystack_id' => rand(1, 1000),
+//            'paystack_id' => rand(1, 1000),
             'paystack_code' => rand(1, 1000),
             'trial_ends_at' => null,
-            'ends_at' => null,
+            'end_date' => null,
         ];
     }
 
@@ -64,7 +64,7 @@ class SubscriptionFactory extends Factory
     public function cancelled(): self
     {
         return $this->state([
-            'ends_at' => now(),
+            'end_date' => now(),
         ]);
     }
 }

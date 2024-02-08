@@ -30,7 +30,6 @@ trait ManagesCustomer
         }
 
         $this->customer()->create([
-            'paystack_id' => $response['data']['id'],
             'paystack_code' => $response['data']['customer_code'],
         ]);
 
@@ -42,7 +41,7 @@ trait ManagesCustomer
      */
     public function paystackEmail(): ?string
     {
-        return $this->email ?? null;
+        return $this->company_email ?? $this->email ?? null;
     }
 
     /**
@@ -73,7 +72,7 @@ trait ManagesCustomer
      */
     protected function assertCustomerExists(): void
     {
-        if (is_null($this->customer) || is_null($this->customer->paystack_id)) {
+        if (is_null($this->customer) || is_null($this->customer->paystack_code)) {
             throw InvalidCustomer::notYetCreated($this);
         }
     }

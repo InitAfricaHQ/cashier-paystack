@@ -76,10 +76,10 @@ trait ManagesSubscriptions
     public function trialEndsAt(string $type = Subscription::DEFAULT_TYPE): ?Carbon
     {
         if ($subscription = $this->subscription($type)) {
-            return $subscription->trial_ends_at;
+            return $subscription->end_date;
         }
 
-        return $this->customer->trial_ends_at;
+        return $this->customer->end_date;
     }
 
     /**

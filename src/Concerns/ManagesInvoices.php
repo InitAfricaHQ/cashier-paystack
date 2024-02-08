@@ -22,7 +22,7 @@ trait ManagesInvoices
      */
     public function tab($description, $amount, array $options = [])
     {
-        if (! $this->customer->paystack_id) {
+        if (! $this->customer->paystack_code) {
             throw new InvalidArgumentException(class_basename($this).' is not a Paystack customer. See the createAsCustomer method.');
         }
 

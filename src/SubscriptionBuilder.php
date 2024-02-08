@@ -15,7 +15,7 @@ class SubscriptionBuilder
     protected $billable;
 
     /**
-     * The type of the subscription.
+     * The type of the subscription. (plan name
      *
      * @var string
      */
@@ -92,7 +92,7 @@ class SubscriptionBuilder
     /**
      * Add a new Paystack subscription to the model.
      *
-     * @return \InitAfricaHQ\Cashier\Subscription
+     * @return \Illuminate\Database\Eloquent\Model
      *
      * @throws \Exception
      */
@@ -104,14 +104,14 @@ class SubscriptionBuilder
             $trialEndsAt = $this->trialDays ? Carbon::now()->addDays($this->trialDays) : null;
         }
 
+//        @todo: get plan using the $this->type and $this->plan
+
         return $this->billable->subscriptions()->create([
             'type' => $this->type,
-            'paystack_id' => $options['id'],
-            'paystack_code' => $options['subscription_code'],
-            'paystack_plan' => $this->plan,
-            'quantity' => 1,
+            'subscription_code' => $options['subscription_code'],
+//            'paystack_plan' => $this->plan,
             'trial_ends_at' => $trialEndsAt,
-            'ends_at' => null,
+            'end_date' => null,
         ]);
     }
 
@@ -129,10 +129,7 @@ class SubscriptionBuilder
 
         $options = array_merge([
             'plan' => $this->plan,
-            'metadata' => json_encode(array_merge([
-                'billable_id' => $this->billable->getKey(),
-                'billable_type' => $this->billable->getMorphClass(),
-            ], $optionsMetadata)),
+            'metadata' => json_encode($optionsMetadata),
         ], $options);
 
         return $this->billable->charge(100, $options);

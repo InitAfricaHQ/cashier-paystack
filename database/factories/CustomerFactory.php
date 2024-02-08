@@ -24,7 +24,7 @@ class CustomerFactory extends Factory
         return [
             'billable_id' => rand(1, 1000),
             'billable_type' => 'user',
-            'paystack_id' => rand(1, 1000),
+//            'paystack_id' => rand(1, 1000),
             'paystack_code' => 'CUS_'.rand(1, 10000000),
             'card_brand' => $this->faker->randomElement(['visa', 'mastercard', 'american_express', 'discover', 'jcb', 'diners_club']),
             'card_last_four' => rand(1000, 9999),

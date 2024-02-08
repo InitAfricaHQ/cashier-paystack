@@ -12,15 +12,13 @@ use LogicException;
 class Subscription extends Model
 {
     const DEFAULT_TYPE = 'default';
+    const FREE_TRIAL = 'trial';
 
-    protected $table = 'paystack_subscriptions';
+    const ACTIVE = 'active';
 
-    /**
-     * The attributes that are not mass assignable.
-     *
-     * @var array
-     */
-    protected $guarded = [];
+    const INACTIVE = 'inactive';
+
+    protected $table = 'bunce_subscription_plans';
 
     /**
      * The attributes that should be mutated to dates.
@@ -28,8 +26,7 @@ class Subscription extends Model
      * @var array
      */
     protected $casts = [
-        'trial_ends_at' => 'datetime',
-        'ends_at' => 'datetime',
+        'end_date' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -69,7 +66,7 @@ class Subscription extends Model
      */
     public function active()
     {
-        return is_null($this->ends_at) || $this->onGracePeriod();
+        return is_null($this->end_date) || $this->onGracePeriod();
     }
 
     /**
@@ -81,7 +78,7 @@ class Subscription extends Model
     public function scopeActive($query)
     {
         $query->where(function ($query) {
-            $query->whereNull('ends_at')
+            $query->whereNull('end_date')
                 ->orWhere(function ($query) {
                     $query->onGracePeriod();
                 });
@@ -116,7 +113,7 @@ class Subscription extends Model
      */
     public function cancelled()
     {
-        return ! is_null($this->ends_at);
+        return ($this->status == self::INACTIVE);
     }
 
     /**
@@ -127,7 +124,7 @@ class Subscription extends Model
      */
     public function scopeCancelled($query)
     {
-        $query->whereNotNull('ends_at');
+        $query->where('status', self::INACTIVE);
     }
 
     /**
@@ -138,7 +135,7 @@ class Subscription extends Model
      */
     public function scopeNotCancelled($query)
     {
-        $query->whereNull('ends_at');
+        $query->whereNot('status', self::ACTIVE);
     }
 
     /**
@@ -169,7 +166,7 @@ class Subscription extends Model
      */
     public function onTrial()
     {
-        return $this->trial_ends_at && $this->trial_ends_at->isFuture();
+        return $this->end_date && $this->end_date->isFuture();
     }
 
     /**
@@ -180,7 +177,8 @@ class Subscription extends Model
      */
     public function scopeOnTrial($query)
     {
-        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', Carbon::now());
+        $query->where('status', self::FREE_TRIAL)
+            ->where('end_date', '>', Carbon::now());
     }
 
     /**
@@ -191,7 +189,7 @@ class Subscription extends Model
      */
     public function scopeNotOnTrial($query)
     {
-        $query->whereNull('trial_ends_at')->orWhere('trial_ends_at', '<=', Carbon::now());
+        $query->whereNot('status', self::FREE_TRIAL)->orWhere('end_date', '<=', Carbon::now());
     }
 
     /**
@@ -201,7 +199,7 @@ class Subscription extends Model
      */
     public function onGracePeriod()
     {
-        return $this->ends_at && $this->ends_at->isFuture();
+        return $this->end_date && $this->end_date->isFuture();
     }
 
     /**
@@ -212,7 +210,7 @@ class Subscription extends Model
      */
     public function scopeOnGracePeriod($query)
     {
-        $query->whereNotNull('ends_at')->where('ends_at', '>', Carbon::now());
+        $query->whereNotNull('end_date')->where('end_date', '>', Carbon::now()->addDays(5));
     }
 
     /**
@@ -223,7 +221,7 @@ class Subscription extends Model
      */
     public function scopeNotOnGracePeriod($query)
     {
-        $query->whereNull('ends_at')->orWhere('ends_at', '<=', Carbon::now());
+        $query->whereNull('end_date')->orWhere('end_date', '<=', Carbon::now());
     }
 
     /**
@@ -235,13 +233,14 @@ class Subscription extends Model
      */
     public function skipTrial()
     {
-        $this->trial_ends_at = null;
+        $this->end_date = null;
 
         return $this;
     }
 
     /**
      * Determine if the subscription is on a specific plan.
+     * @todo change to subscription_plan_id
      */
     public function hasPlan(string $planId): bool
     {
@@ -266,11 +265,12 @@ class Subscription extends Model
         // would have ended. Otherwise, we'll retrieve the end of the billing period
         // period and make that the end of the grace period for this current user.
         if ($this->onTrial()) {
-            $this->ends_at = $this->trial_ends_at;
+//            @todo
         } else {
-            $this->ends_at = Carbon::parse(
+            $this->end_date = Carbon::parse(
                 $subscription['next_payment_date']
             );
+            $this->status = self::INACTIVE;
         }
 
         $this->save();
@@ -298,7 +298,7 @@ class Subscription extends Model
      */
     public function markAsCancelled()
     {
-        $this->fill(['ends_at' => Carbon::now()])->save();
+        $this->fill(['end_date' => Carbon::now(),'status' => self::INACTIVE])->save();
     }
 
     /**
@@ -323,7 +323,7 @@ class Subscription extends Model
         // Finally, we will remove the ending timestamp from the user's record in the
         // local database to indicate that the subscription is active again and is
         // no longer "cancelled". Then we will save this record in the database.
-        $this->fill(['ends_at' => null])->save();
+        $this->fill(['end_date' => null,'status' => self::ACTIVE])->save();
 
         return $this;
     }
@@ -355,7 +355,7 @@ class Subscription extends Model
      */
     public function asPaystackSubscription()
     {
-        $response = Paystack::fetchSubscription($this->paystack_code);
+        $response = Paystack::fetchSubscription($this->subscription_code);
         $subscription = $response->json('data');
 
         if (! $subscription || empty($subscription)) {
