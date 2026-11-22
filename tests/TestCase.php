@@ -3,8 +3,10 @@
 namespace Tests;
 
 use InitAfricaHQ\Cashier\CashierServiceProvider;
+use Orchestra\Testbench\Attributes\WithMigration;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
+#[WithMigration]
 class TestCase extends OrchestraTestCase
 {
     /**
@@ -38,10 +40,5 @@ class TestCase extends OrchestraTestCase
     protected function defineEnvironment($app)
     {
         $app['config']->set('database.default', 'testing');
-    }
-
-    protected function defineDatabaseMigrations()
-    {
-        $this->loadLaravelMigrations(['--database' => 'testing']);
     }
 }

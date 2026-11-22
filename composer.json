@@ -1,7 +1,12 @@
 {
     "name": "initafricahq/cashier-paystack",
     "description": "A Laravel Cashier Wrapper that provides an expressive, fluent interface to Paystack's subscription invoicing services.",
-    "keywords": ["laravel", "paystack", "billing", "cashier"],
+    "keywords": [
+        "laravel",
+        "paystack",
+        "billing",
+        "cashier"
+    ],
     "license": "MIT",
     "authors": [
         {
@@ -10,22 +15,22 @@
         }
     ],
     "require": {
-        "php": "^8.1",
-        "dompdf/dompdf": "^2.0",
+        "php": "^8.2",
+        "dompdf/dompdf": "^3.0",
         "guzzlehttp/guzzle": "^7.8",
-        "illuminate/database": "^10.0",
-        "illuminate/http": "^10.30",
-        "illuminate/routing": "^10.30",
-        "illuminate/support": "^10.0",
-        "illuminate/view": "^10.30",
-        "nesbot/carbon": "^2.0",
-        "symfony/http-kernel": "^6.0"
+        "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/http": "^10.30|^11.0|^12.0|^13.0",
+        "illuminate/routing": "^10.30|^11.0|^12.0|^13.0",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/view": "^10.30|^11.0|^12.0|^13.0",
+        "nesbot/carbon": "^2.0|^3.0",
+        "symfony/http-kernel": "^6.0|^7.0|^8.0"
     },
     "require-dev": {
         "laravel/pint": "^1.13",
         "mockery/mockery": "^1.6",
-        "orchestra/testbench": "^8.14",
-        "pestphp/pest": "^2.24"
+        "orchestra/testbench": "^8.14|^9.0|^10.0|^11.0",
+        "pestphp/pest": "^2.24|^3.0|^4.0|^5.0"
     },
     "autoload": {
         "psr-4": {
@@ -43,6 +48,9 @@
             "providers": [
                 "InitAfricaHQ\\Cashier\\CashierServiceProvider"
             ]
+        },
+        "branch-alias": {
+            "dev-laravel-13": "2.x-dev"
         }
     },
     "config": {
