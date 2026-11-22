@@ -76,8 +76,7 @@ class WebhookController extends Controller
         if ($billable && ! isset($subscription)) {
             $plan = $data['plan'];
 
-            // To-do: default is currently hardcoded here and should not be
-            $builder = $billable->newSubscription('default', $plan['plan_code']);
+            $builder = $billable->newSubscription($plan['name'], $plan['plan_code']);
 
             $data['id'] = null;
 

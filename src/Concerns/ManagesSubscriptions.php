@@ -175,7 +175,7 @@ trait ManagesSubscriptions
     {
         $this->assertCustomerExists();
 
-        $response = Paystack::api('GET', "subscription/{$this->subscription->paystack_code}/manage/link");
+        $response = Paystack::api("subscription/{$this->subscription()->paystack_code}/manage/link", 'GET');
 
         return $response['data']['link'];
     }
