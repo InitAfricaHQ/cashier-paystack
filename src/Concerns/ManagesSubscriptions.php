@@ -31,7 +31,7 @@ trait ManagesSubscriptions
     /**
      * Determine if the billable's trial has ended.
      */
-    public function hasExpiredTrial(string $type = Subscription::DEFAULT_TYPE, string $plan = null): bool
+    public function hasExpiredTrial(string $type = Subscription::DEFAULT_TYPE, ?string $plan = null): bool
     {
         if (func_num_args() === 0 && $this->hasExpiredGenericTrial()) {
             return true;
