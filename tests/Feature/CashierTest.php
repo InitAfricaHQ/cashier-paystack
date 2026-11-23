@@ -158,6 +158,70 @@ it('can successfully create a subscription for a billable from a webhook', funct
     expect($subscription->ended())->toBeFalse();
 });
 
+it('can use the plan name as the type of a webhook-created subscription', function () {
+    config(['cashier-paystack.subscription_type_from_plan' => true]);
+
+    $user = User::factory()->create();
+    Customer::factory()->create([
+        'billable_id' => $user->getKey(),
+        'billable_type' => $user->getMorphClass(),
+    ]);
+
+    $request = Request::create('/', 'POST', [], [], [], [], json_encode([
+        'event' => 'subscription.create',
+        'data' => [
+            'dodefault' => 'test',
+            'status' => 'complete',
+            'subscription_code' => 'SUB_vsyqdmlzble3uii',
+            'amount' => 50000,
+            'cron_expression' => '0 0 28 * *',
+            'next_payment_date' => '2016-05-19T07:00:00.000Z',
+            'open_invoice' => null,
+            'createdAt' => '2016-03-20T00:23:24.000Z',
+            'plan' => [
+                'name' => 'Monthly retainer',
+                'plan_code' => 'PLN_gx2wn530m0i3w3m',
+                'description' => null,
+                'amount' => 50000,
+                'interval' => 'monthly',
+                'send_invoices' => true,
+                'send_sms' => true,
+                'currency' => 'NGN',
+            ],
+            'authorization' => [
+                'authorization_code' => 'AUTH_96xphygz',
+                'bin' => '539983',
+                'last4' => '7357',
+                'exp_month' => '10',
+                'exp_year' => '2017',
+                'card_type' => 'MASTERCARD DEBIT',
+                'bank' => 'GTBANK',
+                'country_code' => 'NG',
+                'brand' => 'MASTERCARD',
+            ],
+            'customer' => [
+                'first_name' => 'BoJack',
+                'last_name' => 'Horseman',
+                'email' => 'bojack@horsinaround.com',
+                'customer_code' => $user->customer->paystack_code,
+                'phone' => '',
+                'risk_action' => 'default',
+            ],
+            'created_at' => '2016-10-01T10:59:59.000Z',
+        ],
+    ]));
+
+    $controller = new \InitAfricaHQ\Cashier\Http\Controllers\WebhookController;
+    $response = $controller($request);
+
+    $this->assertEquals(200, $response->getStatusCode());
+
+    $user = $user->fresh();
+
+    expect($user->subscription('default'))->toBeNull();
+    expect($user->subscription('Monthly retainer')->active())->toBeTrue();
+});
+
 it('can enable billable configured generic trials', function () {
     $user = User::factory()->create();
     Customer::factory()->create([

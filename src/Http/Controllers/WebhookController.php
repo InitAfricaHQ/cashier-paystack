@@ -76,7 +76,14 @@ class WebhookController extends Controller
         if ($billable && ! isset($subscription)) {
             $plan = $data['plan'];
 
-            $builder = $billable->newSubscription($plan['name'], $plan['plan_code']);
+            // Subscriptions created outside the app (e.g. a Paystack payment page) get
+            // the default type, so subscribed() and subscription() find them. Apps
+            // that key subscriptions by plan name can opt in through the config.
+            $type = config('cashier-paystack.subscription_type_from_plan')
+                ? $plan['name']
+                : Subscription::DEFAULT_TYPE;
+
+            $builder = $billable->newSubscription($type, $plan['plan_code']);
 
             $data['id'] = null;
 

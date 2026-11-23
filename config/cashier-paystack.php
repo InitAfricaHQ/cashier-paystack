@@ -50,4 +50,16 @@ return [
 
     'merchant_email' => env('PAYSTACK_MERCHANT_EMAIL'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Subscription Type For Webhook-Created Subscriptions
+    |--------------------------------------------------------------------------
+    |
+    | When Paystack reports a subscription the app did not create, it is saved
+    | with the "default" type. Set this to true to use the plan's name instead.
+    |
+    */
+
+    'subscription_type_from_plan' => env('PAYSTACK_SUBSCRIPTION_TYPE_FROM_PLAN', false),
+
 ];
